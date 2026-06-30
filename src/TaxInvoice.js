@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
-import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 import * as XLSX from 'xlsx';
 
 const BLUE = '#154360';
@@ -16,13 +16,6 @@ function fmt2(value) {
 function raw(value) {
   if (value === null || value === undefined || value === '') return '';
   return String(value);
-}
-
-function fmtDate(iso) {
-  if (!iso) return '';
-  const d = new Date(iso);
-  if (isNaN(d)) return iso;
-  return d.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
 // ─── Styles ──────────────────────────────────────────────────────────────────
