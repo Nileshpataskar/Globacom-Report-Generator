@@ -14,7 +14,7 @@ const DEFAULT_INVOICE_TYPE_KEY = 'A1B093AC-CF9B-47A8-BC96-F1660E9936C3';
 //   e.g. billStartDay=1,  June → June 30  (new Date(y, m, 0))
 function getBillCycleRange(billMonth, billStartDay) {
   const [year, month] = billMonth.split('-').map(Number);
-  const stopTime = new Date(year, month, billStartDay - 1);
+  const stopTime = new Date(year, month - 1, billStartDay - 1);
   return { stopTime };
 }
 
