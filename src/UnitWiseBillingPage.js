@@ -2,29 +2,19 @@ import { useState, useEffect, useRef } from 'react';
 import axiosInstance from './services/axiosInstance';
 import UnitWiseBillingReport from './UnitWiseBillingReport';
 
-const MIS_BASE = process.env.REACT_APP_MIS_BASE_URL || 'https://globatech.net/RelayCSPAmalCommunityPreProd/api';
-
-const BILL_POST_OPTIONS = [
-  { label: 'Both',     value: 'both' },
-  { label: 'Posted',   value: 'posted' },
-  { label: 'Unposted', value: 'unposted' },
-];
-
+// Date helpers — convert picker value (YYYY-MM-DD) to API UTC timestamps using local timezone
+// (matches original: moment(date).startOf('day').utc() / moment(date).endOf('day').utc())
 function toApiFromDate(dateStr) {
-  const [y, m, d] = dateStr.split('-').map(Number);
-  const prev = new Date(Date.UTC(y, m - 1, d - 1));
-  const y2 = prev.getUTCFullYear();
-  const m2 = String(prev.getUTCMonth() + 1).padStart(2, '0');
-  const d2 = String(prev.getUTCDate()).padStart(2, '0');
-  return `${y2}-${m2}-${d2}T18:30:00.000Z`;
+  const d = new Date(`${dateStr}T00:00:00`); // local midnight
+  return d.toISOString().replace('.000Z', '.000Z'); // already ISO UTC
 }
-
 function toApiToDate(dateStr) {
-  return `${dateStr}T18:29:59.999Z`;
+  const d = new Date(`${dateStr}T23:59:59`); // local end-of-day
+  return d.toISOString().replace('.999Z', '.999Z');
 }
 
 // ─── Searchable Select ────────────────────────────────────────────────────────
-function SearchableSelect({ label, options, value, onChange, getKey, getLabel, placeholder, disabled, error }) {
+function SearchableSelect({ label, options, value, onChange, getKey, getLabel, placeholder, disabled }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const ref = useRef(null);
@@ -42,15 +32,13 @@ function SearchableSelect({ label, options, value, onChange, getKey, getLabel, p
     return () => document.removeEventListener('mousedown', close);
   }, []);
 
-  const border = error ? '#ef4444' : open ? '#2563eb' : '#bbb';
-
   return (
     <div ref={ref} style={{ position: 'relative', flex: 1 }}>
       <div
-        style={{ ...SD.wrap, borderColor: border, cursor: disabled ? 'not-allowed' : 'pointer' }}
+        style={{ ...SD.wrap, cursor: disabled ? 'not-allowed' : 'pointer' }}
         onClick={() => !disabled && setOpen((p) => !p)}
       >
-        <label style={{ ...SD.label, color: error ? '#ef4444' : '#777' }}>{label}</label>
+        <label style={SD.label}>{label}</label>
         <input
           style={{ ...SD.input, cursor: disabled ? 'not-allowed' : 'text' }}
           value={open ? search : (selected ? getLabel(selected) : '')}
@@ -85,14 +73,11 @@ function SearchableSelect({ label, options, value, onChange, getKey, getLabel, p
 }
 
 // ─── Date Field ───────────────────────────────────────────────────────────────
-function DateField({ label, value, onChange, disabled }) {
+function DateField({ label, value, onChange }) {
   const inputRef = useRef(null);
   return (
     <div style={{ flex: 1 }}>
-      <div
-        style={{ ...SD.wrap, cursor: disabled ? 'not-allowed' : 'pointer' }}
-        onClick={() => inputRef.current?.click()}
-      >
+      <div style={{ ...SD.wrap, cursor: 'pointer' }} onClick={() => inputRef.current?.click()}>
         <label style={SD.label}>{label}</label>
         <input
           ref={inputRef}
@@ -100,9 +85,35 @@ function DateField({ label, value, onChange, disabled }) {
           style={{ ...SD.input, color: value ? '#222' : '#aaa', cursor: 'pointer' }}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          disabled={disabled}
         />
         <span style={{ ...SD.arrow, fontSize: '16px', color: '#555' }}>&#128197;</span>
+      </div>
+    </div>
+  );
+}
+
+// ─── Multi-select checkboxes (Bill Post Status) ───────────────────────────────
+function MultiCheckField({ label, options, selected, onChange }) {
+  return (
+    <div style={{ flex: 1 }}>
+      <div style={{ ...SD.wrap, padding: '8px 12px', minHeight: '52px' }}>
+        <label style={{ ...SD.label, position: 'static', display: 'block', marginBottom: '6px' }}>{label}</label>
+        <div style={{ display: 'flex', gap: '16px' }}>
+          {options.map((o) => (
+            <label key={o.id} style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '13px', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={selected.includes(o.id)}
+                onChange={(e) => {
+                  if (e.target.checked) onChange([...selected, o.id]);
+                  else onChange(selected.filter((v) => v !== o.id));
+                }}
+                style={{ cursor: 'pointer' }}
+              />
+              {o.name}
+            </label>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -120,7 +131,7 @@ function SimpleSelect({ label, options, value, onChange }) {
           onChange={(e) => onChange(e.target.value)}
         >
           {options.map((o) => (
-            <option key={o.value} value={o.value}>{o.label}</option>
+            <option key={String(o.id)} value={String(o.id)}>{o.name}</option>
           ))}
         </select>
       </div>
@@ -161,7 +172,6 @@ const SD = {
     transform: 'translateY(-50%)',
     fontSize: '14px',
     color: '#666',
-    cursor: 'pointer',
     userSelect: 'none',
     pointerEvents: 'none',
   },
@@ -255,6 +265,12 @@ const S = {
   },
 };
 
+// Mirrors original: bill post status ids
+const BILL_POST_OPTIONS = [
+  { id: 0, name: 'Unposted' },
+  { id: 1, name: 'Posted' },
+];
+
 export default function UnitWiseBillingPage() {
   const [estates,        setEstates]        = useState([]);
   const [estatesLoading, setEstatesLoading] = useState(true);
@@ -262,12 +278,29 @@ export default function UnitWiseBillingPage() {
 
   const [fromDate, setFromDate] = useState('');
   const [toDate,   setToDate]   = useState('');
-  const [billPost, setBillPost] = useState('both');
 
-  const [rows,         setRows]         = useState([]);
-  const [reportLoading,setReportLoading]= useState(false);
-  const [reportError,  setReportError]  = useState('');
-  const [reportReady,  setReportReady]  = useState(false);
+  // Multi-select: array of ids (0=Unposted, 1=Posted)
+  const [postStatus, setPostStatus] = useState([]);
+
+  // isBillMonthWiseReport: mirrors original SelectField
+  const [billMonthWise, setBillMonthWise] = useState('true');
+
+  const [rows,          setRows]          = useState([]);
+  const [reportLoading, setReportLoading] = useState(false);
+  const [reportError,   setReportError]   = useState('');
+  const [reportReady,   setReportReady]   = useState(false);
+
+  // Mirrors original billingOptions logic:
+  // only show "Bill Post Month" when only Posted is selected
+  const onlyPostedSelected = postStatus.length === 1 && postStatus[0] === 1;
+  const billingOptions = onlyPostedSelected
+    ? [{ id: 'true', name: 'Bill Month' }, { id: 'false', name: 'Bill Post Month' }]
+    : [{ id: 'true', name: 'Bill Month' }];
+
+  // Reset billMonthWise to true when options collapse back to one
+  useEffect(() => {
+    if (!onlyPostedSelected) setBillMonthWise('true');
+  }, [onlyPostedSelected]);
 
   useEffect(() => {
     axiosInstance.get('/Configuration/estates', { params: { reqestFor: 'LIST' } })
@@ -282,16 +315,23 @@ export default function UnitWiseBillingPage() {
     setReportError('');
     setReportReady(false);
     try {
+      // Mirrors original isBillPost logic exactly:
+      // only-Posted → true, only-Unposted → false, both or none → null (omit)
+      let isBillPost = null;
+      if (postStatus.length === 1) {
+        isBillPost = postStatus[0] === 1;
+      }
+
       const params = {
         estateKey:             selectedEstate.estateKey,
         fromDate:              toApiFromDate(fromDate),
         toDate:                toApiToDate(toDate),
-        isBillMonthWiseReport: true,
+        isBillMonthWiseReport: billMonthWise === 'true',
       };
-      if (billPost === 'posted')   params.isBillPost = true;
-      if (billPost === 'unposted') params.isBillPost = false;
+      if (isBillPost !== null) params.isBillPost = isBillPost;
 
-      const { data } = await axiosInstance.get(`${MIS_BASE}/MISReports/unitWiseBillingReport`, { params });
+      // Use relative path through axiosInstance (portal base URL) — same pattern as TaxInvoice
+      const { data } = await axiosInstance.get('/MISReports/unitWiseBillingReport', { params });
       const result = Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : []);
       setRows(result);
       setReportReady(true);
@@ -327,29 +367,35 @@ export default function UnitWiseBillingPage() {
 
       <div style={S.filterCard}>
         <SearchableSelect
-          label="Estate"
+          label="Tower Name"
           options={estates}
           value={selectedEstate?.estateKey || ''}
           onChange={(o) => { setSelectedEstate(o); setReportReady(false); setRows([]); }}
           getKey={(o) => o.estateKey}
           getLabel={(o) => o.estateName}
-          placeholder="Select estate…"
+          placeholder="Select tower…"
           disabled={estatesLoading}
+        />
+        <MultiCheckField
+          label="Bill Post Status"
+          options={BILL_POST_OPTIONS}
+          selected={postStatus}
+          onChange={setPostStatus}
+        />
+        <SimpleSelect
+          label="Billing Option"
+          options={billingOptions}
+          value={billMonthWise}
+          onChange={setBillMonthWise}
         />
         <DateField label="From Date" value={fromDate} onChange={setFromDate} />
         <DateField label="To Date"   value={toDate}   onChange={setToDate}   />
-        <SimpleSelect
-          label="Bill Post Status"
-          options={BILL_POST_OPTIONS}
-          value={billPost}
-          onChange={setBillPost}
-        />
       </div>
 
       <div style={S.body}>
         {!reportReady && !reportLoading && !reportError && (
           <div style={S.placeholder}>
-            Select an estate and date range, then click <strong>Generate Report</strong>.
+            Select a tower and date range, then click <strong>Generate Report</strong>.
           </div>
         )}
 
