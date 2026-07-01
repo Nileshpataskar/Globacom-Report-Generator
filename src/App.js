@@ -1,6 +1,7 @@
 import { useState } from "react";
 import StatementOfAccountPage from "./reportPage";
 import TaxInvoicePage from "./TaxInvoicePage";
+import UnitWiseBillingPage from "./UnitWiseBillingPage";
 import LoginPage from "./LoginPage";
 import { isAuthenticated, clearTokens } from "./services/authService";
 
@@ -125,7 +126,7 @@ export default function App() {
       <main style={S.main}>
         {active === "tax-invoice"          && <TaxInvoicePage />}
         {active === "statement-of-account" && <StatementOfAccountPage />}
-        {active === "unit-wise-billing"    && <PlaceholderPage title="Unit Wise Billing Report" />}
+        {active === "unit-wise-billing"    && <UnitWiseBillingPage />}
         {active === "collection-report"    && <PlaceholderPage title="Collection Report" />}
       </main>
     </div>
