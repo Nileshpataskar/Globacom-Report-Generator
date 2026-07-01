@@ -2,6 +2,7 @@ import { useState } from "react";
 import StatementOfAccountPage from "./reportPage";
 import TaxInvoicePage from "./TaxInvoicePage";
 import UnitWiseBillingPage from "./UnitWiseBillingPage";
+import TowerWiseCollectionPage from "./TowerWiseCollectionPage";
 import LoginPage from "./LoginPage";
 import { isAuthenticated, clearTokens } from "./services/authService";
 
@@ -69,17 +70,17 @@ const S = {
   },
 };
 
-function PlaceholderPage({ title }) {
-  return (
-    <div style={S.placeholder}>
-      {title} — coming soon
-    </div>
-  );
-}
+// function PlaceholderPage({ title }) {
+//   return (
+//     <div style={S.placeholder}>
+//       {title} — coming soon
+//     </div>
+//   );
+// }
 
 export default function App() {
   const [loggedIn, setLoggedIn] = useState(isAuthenticated());
-  const [active, setActive] = useState("statement-of-account");
+  const [active, setActive] = useState("tax-invoice");
 
   if (!loggedIn) {
     return <LoginPage onLoginSuccess={() => setLoggedIn(true)} />;
@@ -127,7 +128,7 @@ export default function App() {
         {active === "tax-invoice"          && <TaxInvoicePage />}
         {active === "statement-of-account" && <StatementOfAccountPage />}
         {active === "unit-wise-billing"    && <UnitWiseBillingPage />}
-        {active === "collection-report"    && <PlaceholderPage title="Collection Report" />}
+        {active === "collection-report"    && <TowerWiseCollectionPage />}
       </main>
     </div>
   );

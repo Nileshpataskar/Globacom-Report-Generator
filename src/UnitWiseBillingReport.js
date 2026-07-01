@@ -33,6 +33,30 @@ const COLUMNS = [
   { key: 'TotalBillingAmount',      label: 'Total Billed Amount (AED)',                                 pdfLabel: 'Total\nBilled',    align: 'right',  isNum: true  },
 ];
 
+// Columns for the Line Item Adjustment Summary (ends at TotalVATAmount — matches API response)
+const SUMMARY_COLUMNS = [
+  { key: 'UnitNumber',             label: 'Unit No.',                                                  align: 'left',   isNum: false },
+  { key: 'ConsumerName',           label: 'Consumer Name',                                             align: 'left',   isNum: false },
+  { key: 'AccountNo',              label: 'Account No',                                                align: 'left',   isNum: false },
+  { key: 'InvoiceNumber',          label: 'Invoice No.',                                               align: 'left',   isNum: false },
+  { key: 'BillFromDate',           label: 'Bill Start Date',                                           align: 'center', isNum: false },
+  { key: 'BillToDate',             label: 'Bill End Date',                                             align: 'center', isNum: false },
+  { key: 'BillDate',               label: 'Bill Date',                                                 align: 'center', isNum: false },
+  { key: 'SecurityDeposite',       label: 'Security Deposit (AED)',                                    align: 'right',  isNum: true  },
+  { key: 'RegistrationFee',        label: 'Registration Fee (AED)',                                    align: 'right',  isNum: true  },
+  { key: 'EneryConsumptionAmount', label: 'Energy Consumption Amount (AED)',                           align: 'right',  isNum: true  },
+  { key: 'CapacityCharges',        label: 'Capacity Charges (AED)',                                    align: 'right',  isNum: true  },
+  { key: 'FuelSubCharges',         label: 'Fuel Surcharge (AED)',                                      align: 'right',  isNum: true  },
+  { key: 'BillingFee',             label: 'Billing Fee (AED)',                                         align: 'right',  isNum: true  },
+  { key: 'LateFee',                label: 'Late Fee (AED)',                                            align: 'right',  isNum: true  },
+  { key: 'ReturnedChequeFee',      label: 'Returned Cheque Fee (AED)',                                 align: 'right',  isNum: true  },
+  { key: 'ReconnectionCharges',    label: 'Reconnection Charges (AED)',                                align: 'right',  isNum: true  },
+  { key: 'InspectionCharges',      label: 'Inspection Charges (AED)',                                  align: 'right',  isNum: true  },
+  { key: 'VATOnUtility',           label: 'VAT on Utility, Capacity Charges & Fuel Surcharges (AED)', align: 'right',  isNum: true  },
+  { key: 'VATOnOtherFee',          label: 'VAT On Other Fees (AED)',                                   align: 'right',  isNum: true  },
+  { key: 'TotalVATAmount',         label: 'Total VAT Amount (AED)',                                    align: 'right',  isNum: true  },
+];
+
 function fmt2(value) {
   const n = parseFloat(value);
   if (value === null || value === undefined || isNaN(n)) return '';
@@ -101,6 +125,9 @@ const S = {
   },
   tableWrap: {
     overflowX: 'auto',
+    overflowY: 'auto',
+    maxHeight: 'calc(100vh - 300px)',
+    position: 'relative',
   },
   table: {
     width: '100%',
@@ -117,6 +144,9 @@ const S = {
     fontWeight: 'bold',
     whiteSpace: 'nowrap',
     verticalAlign: 'bottom',
+    position: 'sticky',
+    top: 0,
+    zIndex: 2,
   },
   td: {
     border: '1px solid #000',
@@ -158,6 +188,11 @@ const S = {
     textAlign: 'right',
     whiteSpace: 'nowrap',
   },
+  // Sticky left columns — Unit No. (col 0) and Consumer Name (col 1)
+  thSticky0: { position: 'sticky', left: 0,     zIndex: 3, background: '#fff', minWidth: '80px'  },
+  thSticky1: { position: 'sticky', left: '80px', zIndex: 3, background: '#fff', minWidth: '160px' },
+  tdSticky0: { position: 'sticky', left: 0,     zIndex: 1, background: '#fff', minWidth: '80px'  },
+  tdSticky1: { position: 'sticky', left: '80px', zIndex: 1, background: '#fff', minWidth: '160px' },
   statusMsg: (ok) => ({
     marginTop: '10px',
     fontSize: '12px',
@@ -166,7 +201,7 @@ const S = {
   }),
 };
 
-export default function UnitWiseBillingReport({ rows, estateName, fromDate, toDate }) {
+export default function UnitWiseBillingReport({ rows, summaryRows = [], estateName, fromDate, toDate }) {
   const [status, setStatus] = useState('');
   const [loadingPDF, setLoadingPDF] = useState(false);
   const [loadingExcel, setLoadingExcel] = useState(false);
@@ -341,8 +376,13 @@ export default function UnitWiseBillingReport({ rows, estateName, fromDate, toDa
           <table style={S.table}>
             <thead>
               <tr>
-                {COLUMNS.map((c) => (
-                  <th key={c.key} style={S.th}>{c.label}</th>
+                {COLUMNS.map((c, i) => (
+                  <th
+                    key={c.key}
+                    style={i === 0 ? { ...S.th, ...S.thSticky0 } : i === 1 ? { ...S.th, ...S.thSticky1 } : S.th}
+                  >
+                    {c.label}
+                  </th>
                 ))}
               </tr>
             </thead>
@@ -350,20 +390,27 @@ export default function UnitWiseBillingReport({ rows, estateName, fromDate, toDa
             <tbody>
               {rows.map((row, idx) => (
                 <tr key={idx}>
-                  {COLUMNS.map((c) => (
-                    <td key={c.key} style={cellStyle(c)}>
-                      {cellValue(row, c)}
-                    </td>
-                  ))}
+                  {COLUMNS.map((c, i) => {
+                    const base = cellStyle(c);
+                    const sticky = i === 0 ? S.tdSticky0 : i === 1 ? S.tdSticky1 : null;
+                    return (
+                      <td key={c.key} style={sticky ? { ...base, ...sticky } : base}>
+                        {cellValue(row, c)}
+                      </td>
+                    );
+                  })}
                 </tr>
               ))}
             </tbody>
 
             <tfoot>
               <tr>
-                <td style={S.tfoot}>Total</td>
+                <td style={{ ...S.tfoot, ...S.tdSticky0 }}>Total</td>
                 {COLUMNS.slice(1).map((c, i) => (
-                  <td key={c.key} style={c.isNum ? S.tfootRight : S.tfoot}>
+                  <td
+                    key={c.key}
+                    style={i === 0 ? { ...(c.isNum ? S.tfootRight : S.tfoot), ...S.tdSticky1 } : c.isNum ? S.tfootRight : S.tfoot}
+                  >
                     {i < 3 ? '' : c.isNum ? sumCol(rows, c.key).toFixed(2) : ''}
                   </td>
                 ))}
@@ -373,6 +420,61 @@ export default function UnitWiseBillingReport({ rows, estateName, fromDate, toDa
         </div>
 
       </div>
+
+      {summaryRows.length > 0 && (
+        <div style={{ ...S.report, marginTop: '28px' }}>
+          <div style={{ ...S.reportTitle, fontSize: '15px', marginBottom: '12px' }}>
+            Line Item Adjustment Summary
+          </div>
+
+          <div style={S.tableWrap}>
+            <table style={{ ...S.table, minWidth: '1600px' }}>
+              <thead>
+                <tr>
+                  {SUMMARY_COLUMNS.map((c, i) => (
+                    <th
+                      key={c.key}
+                      style={i === 0 ? { ...S.th, ...S.thSticky0 } : i === 1 ? { ...S.th, ...S.thSticky1 } : S.th}
+                    >
+                      {c.label}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+
+              <tbody>
+                {summaryRows.map((row, idx) => (
+                  <tr key={idx}>
+                    {SUMMARY_COLUMNS.map((c, i) => {
+                      const base = cellStyle(c);
+                      const sticky = i === 0 ? S.tdSticky0 : i === 1 ? S.tdSticky1 : null;
+                      return (
+                        <td key={c.key} style={sticky ? { ...base, ...sticky } : base}>
+                          {cellValue(row, c)}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+
+              <tfoot>
+                <tr>
+                  <td style={{ ...S.tfoot, ...S.tdSticky0 }}>Total</td>
+                  {SUMMARY_COLUMNS.slice(1).map((c, i) => (
+                    <td
+                      key={c.key}
+                      style={i === 0 ? { ...(c.isNum ? S.tfootRight : S.tfoot), ...S.tdSticky1 } : c.isNum ? S.tfootRight : S.tfoot}
+                    >
+                      {i < 3 ? '' : c.isNum ? sumCol(summaryRows, c.key).toFixed(2) : ''}
+                    </td>
+                  ))}
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      )}
 
       {status && (
         <div style={S.statusMsg(status.startsWith('✓'))}>{status}</div>

@@ -1,19 +1,17 @@
 import { useState, useEffect, useRef } from 'react';
 import axiosInstance from './services/axiosInstance';
-import UnitWiseBillingReport from './UnitWiseBillingReport';
+import TowerWiseCollectionReport from './TowerWiseCollectionReport';
 
-// Date helpers — convert picker value (YYYY-MM-DD) to API UTC timestamps using local timezone
-// (matches original: moment(date).startOf('day').utc() / moment(date).endOf('day').utc())
 function toApiFromDate(dateStr) {
-  const d = new Date(`${dateStr}T00:00:00`); // local midnight
-  return d.toISOString().replace('.000Z', '.000Z'); // already ISO UTC
+  const d = new Date(`${dateStr}T00:00:00`);
+  return d.toISOString();
 }
 function toApiToDate(dateStr) {
-  const d = new Date(`${dateStr}T23:59:59`); // local end-of-day
-  return d.toISOString().replace('.999Z', '.999Z');
+  const d = new Date(`${dateStr}T23:59:59`);
+  return d.toISOString();
 }
 
-// ─── Searchable Select ────────────────────────────────────────────────────────
+// ─── Searchable Select ─────────────────────────────────────────────────────────
 function SearchableSelect({ label, options, value, onChange, getKey, getLabel, placeholder, disabled }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -50,7 +48,6 @@ function SearchableSelect({ label, options, value, onChange, getKey, getLabel, p
         />
         <span style={SD.arrow}>▾</span>
       </div>
-
       {open && !disabled && (
         <div style={SD.dropdown}>
           {filtered.length === 0 ? (
@@ -72,7 +69,7 @@ function SearchableSelect({ label, options, value, onChange, getKey, getLabel, p
   );
 }
 
-// ─── Date Field ───────────────────────────────────────────────────────────────
+// ─── Date Field ────────────────────────────────────────────────────────────────
 function DateField({ label, value, onChange }) {
   const inputRef = useRef(null);
   return (
@@ -86,70 +83,6 @@ function DateField({ label, value, onChange }) {
           value={value}
           onChange={(e) => onChange(e.target.value)}
         />
-      </div>
-    </div>
-  );
-}
-
-// ─── Pill toggle buttons (Bill Post Status) ───────────────────────────────────
-function PillToggleField({ label, options, selected, onChange }) {
-  function toggle(id) {
-    if (selected.includes(id)) onChange(selected.filter((v) => v !== id));
-    else onChange([...selected, id]);
-  }
-  return (
-    <div style={{ flex: 1 }}>
-      <div style={{ ...SD.wrap, padding: '6px 12px 8px', cursor: 'default' }}>
-        <label style={SD.label}>{label}</label>
-        <div style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
-          {options.map((o) => {
-            const active = selected.includes(o.id);
-            return (
-              <button
-                key={o.id}
-                type="button"
-                onClick={() => toggle(o.id)}
-                style={{
-                  padding: '3px 14px',
-                  borderRadius: '999px',
-                  border: `1.5px solid ${active ? '#2563eb' : '#ccc'}`,
-                  background: active ? '#2563eb' : '#fff',
-                  color: active ? '#fff' : '#555',
-                  fontSize: '12px',
-                  fontFamily: 'Arial, Helvetica, sans-serif',
-                  fontWeight: active ? '600' : '400',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {active && <span style={{ marginRight: '4px', fontSize: '10px' }}>✓</span>}
-                {o.name}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── Simple Select ────────────────────────────────────────────────────────────
-function SimpleSelect({ label, options, value, onChange }) {
-  return (
-    <div style={{ flex: 1 }}>
-      <div style={SD.wrap}>
-        <label style={SD.label}>{label}</label>
-        <select
-          style={{ ...SD.input, cursor: 'pointer', background: 'transparent', paddingRight: '24px', appearance: 'none', WebkitAppearance: 'none' }}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-        >
-          {options.map((o) => (
-            <option key={String(o.id)} value={String(o.id)}>{o.name}</option>
-          ))}
-        </select>
-        <span style={SD.arrow}>▾</span>
       </div>
     </div>
   );
@@ -269,7 +202,6 @@ const S = {
     display: 'flex',
     gap: '14px',
     alignItems: 'stretch',
-    flexWrap: 'nowrap',
   },
   body: { padding: '0 0 24px' },
   placeholder: {
@@ -284,43 +216,17 @@ const S = {
   },
 };
 
-// Mirrors original: bill post status ids
-const BILL_POST_OPTIONS = [
-  { id: 0, name: 'Unposted' },
-  { id: 1, name: 'Posted' },
-];
-
-export default function UnitWiseBillingPage() {
+export default function TowerWiseCollectionPage() {
   const [estates,        setEstates]        = useState([]);
   const [estatesLoading, setEstatesLoading] = useState(true);
   const [selectedEstate, setSelectedEstate] = useState(null);
-
-  const [fromDate, setFromDate] = useState('');
-  const [toDate,   setToDate]   = useState('');
-
-  // Multi-select: array of ids (0=Unposted, 1=Posted)
-  const [postStatus, setPostStatus] = useState([]);
-
-  // isBillMonthWiseReport: mirrors original SelectField
-  const [billMonthWise, setBillMonthWise] = useState('true');
+  const [fromDate,       setFromDate]       = useState('');
+  const [toDate,         setToDate]         = useState('');
 
   const [rows,          setRows]          = useState([]);
-  const [summaryRows,   setSummaryRows]   = useState([]);
   const [reportLoading, setReportLoading] = useState(false);
   const [reportError,   setReportError]   = useState('');
   const [reportReady,   setReportReady]   = useState(false);
-
-  // Mirrors original billingOptions logic:
-  // only show "Bill Post Month" when only Posted is selected
-  const onlyPostedSelected = postStatus.length === 1 && postStatus[0] === 1;
-  const billingOptions = onlyPostedSelected
-    ? [{ id: 'true', name: 'Bill Month' }, { id: 'false', name: 'Bill Post Month' }]
-    : [{ id: 'true', name: 'Bill Month' }];
-
-  // Reset billMonthWise to true when options collapse back to one
-  useEffect(() => {
-    if (!onlyPostedSelected) setBillMonthWise('true');
-  }, [onlyPostedSelected]);
 
   useEffect(() => {
     axiosInstance.get('/Configuration/estates', { params: { reqestFor: 'LIST' } })
@@ -335,28 +241,15 @@ export default function UnitWiseBillingPage() {
     setReportError('');
     setReportReady(false);
     try {
-      let isBillPost = null;
-      if (postStatus.length === 1) {
-        isBillPost = postStatus[0] === 1;
-      }
-
       const params = {
-        estateKey:             selectedEstate.estateKey,
-        fromDate:              toApiFromDate(fromDate),
-        toDate:                toApiToDate(toDate),
-        isBillMonthWiseReport: billMonthWise === 'true',
-        timeZoneId:            Intl.DateTimeFormat().resolvedOptions().timeZone,
+        estateKey:  selectedEstate.estateKey,
+        fromDate:   toApiFromDate(fromDate),
+        toDate:     toApiToDate(toDate),
+        timeZoneId: Intl.DateTimeFormat().resolvedOptions().timeZone,
       };
-      if (isBillPost !== null) params.isBillPost = isBillPost;
-
-      const [mainRes, summaryRes] = await Promise.all([
-        axiosInstance.get('/MISReports/unitWiseBillingReport', { params }),
-        axiosInstance.get('/MISReports/unitWiseBillingLineItemSummaryReport', { params }),
-      ]);
-
-      const toArr = (d) => Array.isArray(d) ? d : (Array.isArray(d?.data) ? d.data : []);
-      setRows(toArr(mainRes.data));
-      setSummaryRows(toArr(summaryRes.data));
+      const { data } = await axiosInstance.get('/MISReports/towerWiseCollectionReport', { params });
+      const result = Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : []);
+      setRows(result);
       setReportReady(true);
     } catch (err) {
       const msg =
@@ -373,17 +266,12 @@ export default function UnitWiseBillingPage() {
 
   return (
     <div style={S.root}>
-
       <header style={S.header}>
         <h1 style={S.headerTitle}>
           <span>&#128196;</span>
-          Unit Wise Billing Report
+          Tower Wise Collection Report
         </h1>
-        <button
-          style={S.generateBtn(canGenerate)}
-          onClick={handleGenerate}
-          disabled={!canGenerate}
-        >
+        <button style={S.generateBtn(canGenerate)} onClick={handleGenerate} disabled={!canGenerate}>
           &#128196; {reportLoading ? 'Generating…' : 'Generate Report'}
         </button>
       </header>
@@ -393,23 +281,11 @@ export default function UnitWiseBillingPage() {
           label="Tower Name"
           options={estates}
           value={selectedEstate?.estateKey || ''}
-          onChange={(o) => { setSelectedEstate(o); setReportReady(false); setRows([]); setSummaryRows([]); }}
+          onChange={(o) => { setSelectedEstate(o); setReportReady(false); setRows([]); }}
           getKey={(o) => o.estateKey}
           getLabel={(o) => o.estateName}
           placeholder="Select tower…"
           disabled={estatesLoading}
-        />
-        <PillToggleField
-          label="Bill Post Status"
-          options={BILL_POST_OPTIONS}
-          selected={postStatus}
-          onChange={setPostStatus}
-        />
-        <SimpleSelect
-          label="Billing Option"
-          options={billingOptions}
-          value={billMonthWise}
-          onChange={setBillMonthWise}
         />
         <DateField label="From Date" value={fromDate} onChange={setFromDate} />
         <DateField label="To Date"   value={toDate}   onChange={setToDate}   />
@@ -421,30 +297,24 @@ export default function UnitWiseBillingPage() {
             Select a tower and date range, then click <strong>Generate Report</strong>.
           </div>
         )}
-
         {reportLoading && (
           <div style={S.placeholder}>Generating report…</div>
         )}
-
         {reportError && !reportLoading && (
           <div style={{ ...S.placeholder, color: '#b91c1c' }}>{reportError}</div>
         )}
-
         {reportReady && !reportLoading && rows.length === 0 && (
           <div style={S.placeholder}>No data found for the selected filters.</div>
         )}
-
         {reportReady && !reportLoading && rows.length > 0 && (
-          <UnitWiseBillingReport
+          <TowerWiseCollectionReport
             rows={rows}
-            summaryRows={summaryRows}
             estateName={selectedEstate?.estateName || ''}
             fromDate={fromDate}
             toDate={toDate}
           />
         )}
       </div>
-
     </div>
   );
 }
