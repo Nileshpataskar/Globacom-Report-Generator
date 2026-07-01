@@ -3,33 +3,34 @@ import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
+// Field names match the actual API response exactly (including API typos like SecurityDeposite, EneryConsumptionAmount)
 const COLUMNS = [
-  { key: 'UnitNo',                               label: 'Unit No.',                                                    pdfLabel: 'Unit\nNo.',          align: 'left',   isNum: false },
-  { key: 'ConsumerName',                         label: 'Consumer Name',                                               pdfLabel: 'Consumer\nName',     align: 'left',   isNum: false },
-  { key: 'AccountNumber',                        label: 'Account No',                                                  pdfLabel: 'Account\nNo',        align: 'left',   isNum: false },
-  { key: 'InvoiceNumber',                        label: 'Invoice No.',                                                 pdfLabel: 'Invoice\nNo.',       align: 'left',   isNum: false },
-  { key: 'BillStartDate',                        label: 'Bill Start Date',                                             pdfLabel: 'Bill\nStart',        align: 'center', isNum: false },
-  { key: 'BillEndDate',                          label: 'Bill End Date',                                               pdfLabel: 'Bill\nEnd',          align: 'center', isNum: false },
-  { key: 'BillDate',                             label: 'Bill Date',                                                   pdfLabel: 'Bill\nDate',         align: 'center', isNum: false },
-  { key: 'SecurityDeposit',                      label: 'Security Deposit (AED)',                                      pdfLabel: 'Sec.\nDeposit',      align: 'right',  isNum: true  },
-  { key: 'RegistrationFee',                      label: 'Registration Fee (AED)',                                      pdfLabel: 'Reg.\nFee',          align: 'right',  isNum: true  },
-  { key: 'EnergyConsumptionAmount',              label: 'Energy Consumption Amount (AED)',                             pdfLabel: 'Energy\nConsump.',   align: 'right',  isNum: true  },
-  { key: 'CapacityCharges',                      label: 'Capacity Charges (AED)',                                      pdfLabel: 'Capacity\nChgs',     align: 'right',  isNum: true  },
-  { key: 'FuelSurcharge',                        label: 'Fuel Surcharge (AED)',                                        pdfLabel: 'Fuel\nSurchg.',      align: 'right',  isNum: true  },
-  { key: 'BillingFee',                           label: 'Billing Fee (AED)',                                           pdfLabel: 'Billing\nFee',       align: 'right',  isNum: true  },
-  { key: 'LateFee',                              label: 'Late Fee (AED)',                                              pdfLabel: 'Late\nFee',          align: 'right',  isNum: true  },
-  { key: 'ReturnedChequeFee',                    label: 'Returned Cheque Fee (AED)',                                   pdfLabel: 'Returned\nCheque',   align: 'right',  isNum: true  },
-  { key: 'ReconnectionCharges',                  label: 'Reconnection Charges (AED)',                                  pdfLabel: 'Reconn.\nChgs',      align: 'right',  isNum: true  },
-  { key: 'InspectionCharges',                    label: 'Inspection Charges (AED)',                                    pdfLabel: 'Insp.\nChgs',        align: 'right',  isNum: true  },
-  { key: 'VATOnUtilityCapacityAndFuelSurcharge', label: 'VAT on Utility, Capacity Charges & Fuel Surcharges (AED)',   pdfLabel: 'VAT\nUtility',       align: 'right',  isNum: true  },
-  { key: 'VATOnOtherFees',                       label: 'VAT On Other Fees (AED)',                                     pdfLabel: 'VAT\nOther',         align: 'right',  isNum: true  },
-  { key: 'TotalAmount',                          label: 'Total Amount (AED)',                                          pdfLabel: 'Total\nAmt',         align: 'right',  isNum: true  },
-  { key: 'TotalVATAmount',                       label: 'Total VAT Amount (AED)',                                      pdfLabel: 'Total\nVAT',         align: 'right',  isNum: true  },
-  { key: 'BilledAmount',                         label: 'Billed Amount (AED)',                                         pdfLabel: 'Billed\nAmt',        align: 'right',  isNum: true  },
-  { key: 'PreviousBalance',                      label: 'Opening/Previous Balance (AED)',                              pdfLabel: 'Prev.\nBalance',     align: 'right',  isNum: true  },
-  { key: 'AdvanceAmount',                        label: 'Advance Amount (AED)',                                        pdfLabel: 'Advance\nAmt',       align: 'right',  isNum: true  },
-  { key: 'TotalAdjustmentAmount',                label: 'Total Adjustment Amount (AED)',                               pdfLabel: 'Adj.\nAmt',          align: 'right',  isNum: true  },
-  { key: 'TotalBilledAmount',                    label: 'Total Billed Amount (AED)',                                   pdfLabel: 'Total\nBilled',      align: 'right',  isNum: true  },
+  { key: 'UnitNumber',              label: 'Unit No.',                                                  pdfLabel: 'Unit\nNo.',        align: 'left',   isNum: false },
+  { key: 'ConsumerName',            label: 'Consumer Name',                                             pdfLabel: 'Consumer\nName',   align: 'left',   isNum: false },
+  { key: 'AccountNo',               label: 'Account No',                                                pdfLabel: 'Account\nNo',      align: 'left',   isNum: false },
+  { key: 'InvoiceNumber',           label: 'Invoice No.',                                               pdfLabel: 'Invoice\nNo.',     align: 'left',   isNum: false },
+  { key: 'BillFromDate',            label: 'Bill Start Date',                                           pdfLabel: 'Bill\nStart',      align: 'center', isNum: false },
+  { key: 'BillToDate',              label: 'Bill End Date',                                             pdfLabel: 'Bill\nEnd',        align: 'center', isNum: false },
+  { key: 'BillDate',                label: 'Bill Date',                                                 pdfLabel: 'Bill\nDate',       align: 'center', isNum: false },
+  { key: 'SecurityDeposite',        label: 'Security Deposit (AED)',                                    pdfLabel: 'Sec.\nDeposit',    align: 'right',  isNum: true  },
+  { key: 'RegistrationFee',         label: 'Registration Fee (AED)',                                    pdfLabel: 'Reg.\nFee',        align: 'right',  isNum: true  },
+  { key: 'EneryConsumptionAmount',  label: 'Energy Consumption Amount (AED)',                           pdfLabel: 'Energy\nConsump.', align: 'right',  isNum: true  },
+  { key: 'CapacityCharges',         label: 'Capacity Charges (AED)',                                    pdfLabel: 'Capacity\nChgs',   align: 'right',  isNum: true  },
+  { key: 'FuelSubCharges',          label: 'Fuel Surcharge (AED)',                                      pdfLabel: 'Fuel\nSurchg.',    align: 'right',  isNum: true  },
+  { key: 'BillingFee',              label: 'Billing Fee (AED)',                                         pdfLabel: 'Billing\nFee',     align: 'right',  isNum: true  },
+  { key: 'LateFee',                 label: 'Late Fee (AED)',                                            pdfLabel: 'Late\nFee',        align: 'right',  isNum: true  },
+  { key: 'ReturnedChequeFee',       label: 'Returned Cheque Fee (AED)',                                 pdfLabel: 'Returned\nCheque', align: 'right',  isNum: true  },
+  { key: 'ReconnectionCharges',     label: 'Reconnection Charges (AED)',                                pdfLabel: 'Reconn.\nChgs',    align: 'right',  isNum: true  },
+  { key: 'InspectionCharges',       label: 'Inspection Charges (AED)',                                  pdfLabel: 'Insp.\nChgs',      align: 'right',  isNum: true  },
+  { key: 'VATOnUtility',            label: 'VAT on Utility, Capacity Charges & Fuel Surcharges (AED)', pdfLabel: 'VAT\nUtility',     align: 'right',  isNum: true  },
+  { key: 'VATOnOtherFee',           label: 'VAT On Other Fees (AED)',                                   pdfLabel: 'VAT\nOther',       align: 'right',  isNum: true  },
+  { key: 'TotalAmount',             label: 'Total Amount (AED)',                                        pdfLabel: 'Total\nAmt',       align: 'right',  isNum: true  },
+  { key: 'TotalVATAmount',          label: 'Total VAT Amount (AED)',                                    pdfLabel: 'Total\nVAT',       align: 'right',  isNum: true  },
+  { key: 'BilledAmount',            label: 'Billed Amount (AED)',                                       pdfLabel: 'Billed\nAmt',      align: 'right',  isNum: true  },
+  { key: 'OpeningPreviousBalance',  label: 'Opening/Previous Balance (AED)',                            pdfLabel: 'Prev.\nBalance',   align: 'right',  isNum: true  },
+  { key: 'AdvanceAmount',           label: 'Advance Amount (AED)',                                      pdfLabel: 'Advance\nAmt',     align: 'right',  isNum: true  },
+  { key: 'TotalAdjustmentAmount',   label: 'Total Adjustment Amount (AED)',                             pdfLabel: 'Adj.\nAmt',        align: 'right',  isNum: true  },
+  { key: 'TotalBillingAmount',      label: 'Total Billed Amount (AED)',                                 pdfLabel: 'Total\nBilled',    align: 'right',  isNum: true  },
 ];
 
 function fmt2(value) {
@@ -170,10 +171,12 @@ export default function UnitWiseBillingReport({ rows, estateName, fromDate, toDa
   const [loadingPDF, setLoadingPDF] = useState(false);
   const [loadingExcel, setLoadingExcel] = useState(false);
 
-  const username = localStorage.getItem('username') || localStorage.getItem('userName') || 'User';
-  const today = new Date();
-  const generatedOn = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
+  // GeneratedBy and GeneratedOn come directly from the API response
+  const firstRow = rows[0] || {};
+  const generatedBy = firstRow.GeneratedBy || '';
+  const generatedOn = firstRow.GeneratedOn || '';
 
+  // Title mirrors Telerik: estateName + " billing report " + "from " + startDate + " to " + stopDate
   const title = `${estateName} billing report from ${displayDate(fromDate)} to ${displayDate(toDate)}`;
 
   function cellStyle(col) {
@@ -195,7 +198,7 @@ export default function UnitWiseBillingReport({ rows, estateName, fromDate, toDa
       const metaRows = [
         [title],
         [],
-        [`Generated By: ${username}`, `Generated On: ${generatedOn}`],
+        [`Generated By: ${generatedBy}`, `Generated On: ${generatedOn}`],
         [],
       ];
       const headerRow = COLUMNS.map((c) => c.label);
@@ -242,7 +245,7 @@ export default function UnitWiseBillingReport({ rows, estateName, fromDate, toDa
 
       doc.setFontSize(8);
       doc.setFont('helvetica', 'normal');
-      doc.text(`Generated By: ${username}    Generated On: ${generatedOn}`, doc.internal.pageSize.getWidth() - 14, 20, { align: 'right' });
+      doc.text(`Generated By: ${generatedBy}    Generated On: ${generatedOn}`, doc.internal.pageSize.getWidth() - 14, 20, { align: 'right' });
 
       const head = [COLUMNS.map((c) => c.pdfLabel)];
 
@@ -330,7 +333,8 @@ export default function UnitWiseBillingReport({ rows, estateName, fromDate, toDa
 
         <div style={S.reportTitle}>{title}</div>
         <div style={S.meta}>
-          Generated By: {username} &nbsp;&nbsp; Generated On: {generatedOn}
+          {generatedBy && <>Generated By: {generatedBy} &nbsp;&nbsp;</>}
+          {generatedOn && <>Generated On: {generatedOn}</>}
         </div>
 
         <div style={S.tableWrap}>

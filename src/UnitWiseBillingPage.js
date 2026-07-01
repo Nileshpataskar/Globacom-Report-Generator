@@ -77,7 +77,7 @@ function DateField({ label, value, onChange }) {
   const inputRef = useRef(null);
   return (
     <div style={{ flex: 1 }}>
-      <div style={{ ...SD.wrap, cursor: 'pointer' }} onClick={() => inputRef.current?.click()}>
+      <div style={SD.wrap} onClick={() => inputRef.current?.click()}>
         <label style={SD.label}>{label}</label>
         <input
           ref={inputRef}
@@ -86,33 +86,48 @@ function DateField({ label, value, onChange }) {
           value={value}
           onChange={(e) => onChange(e.target.value)}
         />
-        <span style={{ ...SD.arrow, fontSize: '16px', color: '#555' }}>&#128197;</span>
       </div>
     </div>
   );
 }
 
-// ─── Multi-select checkboxes (Bill Post Status) ───────────────────────────────
-function MultiCheckField({ label, options, selected, onChange }) {
+// ─── Pill toggle buttons (Bill Post Status) ───────────────────────────────────
+function PillToggleField({ label, options, selected, onChange }) {
+  function toggle(id) {
+    if (selected.includes(id)) onChange(selected.filter((v) => v !== id));
+    else onChange([...selected, id]);
+  }
   return (
     <div style={{ flex: 1 }}>
-      <div style={{ ...SD.wrap, padding: '8px 12px', minHeight: '52px' }}>
-        <label style={{ ...SD.label, position: 'static', display: 'block', marginBottom: '6px' }}>{label}</label>
-        <div style={{ display: 'flex', gap: '16px' }}>
-          {options.map((o) => (
-            <label key={o.id} style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '13px', cursor: 'pointer' }}>
-              <input
-                type="checkbox"
-                checked={selected.includes(o.id)}
-                onChange={(e) => {
-                  if (e.target.checked) onChange([...selected, o.id]);
-                  else onChange(selected.filter((v) => v !== o.id));
+      <div style={{ ...SD.wrap, padding: '6px 12px 8px', cursor: 'default' }}>
+        <label style={SD.label}>{label}</label>
+        <div style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
+          {options.map((o) => {
+            const active = selected.includes(o.id);
+            return (
+              <button
+                key={o.id}
+                type="button"
+                onClick={() => toggle(o.id)}
+                style={{
+                  padding: '3px 14px',
+                  borderRadius: '999px',
+                  border: `1.5px solid ${active ? '#2563eb' : '#ccc'}`,
+                  background: active ? '#2563eb' : '#fff',
+                  color: active ? '#fff' : '#555',
+                  fontSize: '12px',
+                  fontFamily: 'Arial, Helvetica, sans-serif',
+                  fontWeight: active ? '600' : '400',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s',
+                  whiteSpace: 'nowrap',
                 }}
-                style={{ cursor: 'pointer' }}
-              />
-              {o.name}
-            </label>
-          ))}
+              >
+                {active && <span style={{ marginRight: '4px', fontSize: '10px' }}>✓</span>}
+                {o.name}
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>
@@ -126,7 +141,7 @@ function SimpleSelect({ label, options, value, onChange }) {
       <div style={SD.wrap}>
         <label style={SD.label}>{label}</label>
         <select
-          style={{ ...SD.input, cursor: 'pointer', background: 'transparent' }}
+          style={{ ...SD.input, cursor: 'pointer', background: 'transparent', paddingRight: '24px', appearance: 'none', WebkitAppearance: 'none' }}
           value={value}
           onChange={(e) => onChange(e.target.value)}
         >
@@ -134,6 +149,7 @@ function SimpleSelect({ label, options, value, onChange }) {
             <option key={String(o.id)} value={String(o.id)}>{o.name}</option>
           ))}
         </select>
+        <span style={SD.arrow}>▾</span>
       </div>
     </div>
   );
@@ -146,6 +162,8 @@ const SD = {
     borderRadius: '4px',
     padding: '18px 36px 6px 12px',
     background: '#fff',
+    minHeight: '52px',
+    boxSizing: 'border-box',
   },
   label: {
     position: 'absolute',
@@ -244,13 +262,14 @@ const S = {
   filterCard: {
     background: '#fff',
     border: '1px solid #dde1e7',
-    borderRadius: '6px',
+    borderRadius: '8px',
+    boxShadow: '0 1px 6px rgba(0,0,0,0.07)',
     margin: '20px 24px',
-    padding: '20px',
+    padding: '18px 20px',
     display: 'flex',
-    gap: '16px',
-    alignItems: 'flex-start',
-    flexWrap: 'wrap',
+    gap: '14px',
+    alignItems: 'stretch',
+    flexWrap: 'nowrap',
   },
   body: { padding: '0 0 24px' },
   placeholder: {
@@ -376,7 +395,7 @@ export default function UnitWiseBillingPage() {
           placeholder="Select tower…"
           disabled={estatesLoading}
         />
-        <MultiCheckField
+        <PillToggleField
           label="Bill Post Status"
           options={BILL_POST_OPTIONS}
           selected={postStatus}
