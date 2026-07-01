@@ -30,7 +30,7 @@ const S = {
   },
   sidebarLogo: {
     padding: "20px 18px 16px",
-    fontSize: "14px",
+    fontSize: "24px",
     fontWeight: "bold",
     borderBottom: "1px solid #2e3d50",
     letterSpacing: "0.02em",
@@ -94,7 +94,7 @@ export default function App() {
   return (
     <div style={S.app}>
       <aside style={S.sidebar}>
-        <div style={S.sidebarLogo}>Globacom Report Generator</div>
+        <div style={S.sidebarLogo}>RelayCSP </div>
         <nav style={S.nav}>
           {MENU.map((item) => (
             <button
