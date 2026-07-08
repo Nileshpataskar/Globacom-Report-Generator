@@ -115,7 +115,7 @@ export default function LoginPage({ onLoginSuccess }) {
     <div style={S.page}>
       <div style={S.card}>
         <div style={S.logo}>
-          <p style={S.title}>RelayCSP Report Generator</p>
+          <p style={S.title}>RelayCSP PreProd Report Generator</p>
           <p style={S.subtitle}>Sign in to continue</p>
         </div>
 
