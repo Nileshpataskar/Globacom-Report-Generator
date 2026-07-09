@@ -222,7 +222,7 @@ export default function UnitWiseBillingReport({ rows, summaryRows = [], estateNa
 
   function cellValue(row, col) {
     if (col.isNum) return fmt2(row[col.key]);
-    return fmtDate(row[col.key]) || row[col.key] || '';
+   return row[col.key];
   }
 
   function exportExcel() {
